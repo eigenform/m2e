@@ -1,0 +1,11 @@
+[build]
+target = "t8112.json"
+incremental = false
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = [
+]
+
+[unstable]
+build-std = ["core", "compiler_builtins", "alloc"]
+build-std-features = ["compiler-builtins-mem"]

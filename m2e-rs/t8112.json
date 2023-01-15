@@ -1,0 +1,26 @@
+{
+  "llvm-target": "aarch64-unknown-none-eabi",
+  "data-layout": "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128",
+  "target-endian": "little",
+  "arch": "aarch64",
+  "os": "none",
+  "panic-strategy": "abort",
+  "target-pointer-width": "64",
+  "linker-flavor": "gcc",
+  "linker-is-gnu": true,
+  "linker": "aarch64-linux-gnu-gcc",
+  "disable-redzone": true,
+  "relocation-model": "pic",
+  "pre-link-args": {
+	  "gcc": [
+		  "-Wl,--script=t8112.ld", "-n",
+		  "-nostdlib", 
+		  "-nostartfiles", 
+		  "-nodefaultlibs",
+		  "-Wl,-gc-sections",
+		  "-Wl,--build-id=none",
+		  "-fPIC"
+	  ]
+  }
+
+}
