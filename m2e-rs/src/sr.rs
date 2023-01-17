@@ -1,38 +1,26 @@
+
 use core::arch::asm;
 
-
-pub unsafe trait SystemRegister {
-    /// Write zero to this register.
-    unsafe fn clear();
-    /// Read the value of this register.
-    unsafe fn read() -> u64;
-    /// Write some value to this register. 
-    unsafe fn write(val: u64);
-}
-
-
-// NOTE: This is probably for interacting with system registers in cases
-// where it's alright to let the compiler deal with things. 
 macro_rules! impl_register { 
     ($name_ident:ident, $reg_name:literal) => {
         pub struct $name_ident;
-        unsafe impl SystemRegister for $name_ident {
+        impl $name_ident {
             #[inline(always)]
-            unsafe fn clear() { 
+            pub unsafe fn clear() { 
                 asm!(concat!("msr ", $reg_name, ", xzr"), 
                      options(nomem, nostack)); 
             }
 
             #[inline(always)]
-            unsafe fn write(val: u64) { 
+            pub unsafe fn write(val: usize) { 
                 asm!(concat!("msr ", $reg_name, ", {reg:x}"), 
                      reg = in(reg) val, options(nomem, nostack)
                 );
             }
 
             #[inline(always)]
-            unsafe fn read() -> u64 { 
-                let val: u64;
+            pub unsafe fn read() -> usize { 
+                let val: usize;
                 asm!(concat!("mrs {reg:x}, ", $reg_name), 
                      reg = out(reg) val, options(nomem, nostack)
                 );

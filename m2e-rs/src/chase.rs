@@ -6,7 +6,6 @@
 //! [PointerMaze::shuffle] is an implementation of [Sattolo's
 //! algorithm](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle).
 
-use core::convert::TryInto;
 use crate::mem::*;
 use crate::armv8;
 
@@ -25,7 +24,6 @@ impl Xorshift64 {
         Self { val: armv8::cntpct_el0() }
     }
     /// Update the state of the PRNG and return the next value.
-    #[inline(never)]
     pub fn next(&mut self) -> usize {
         let mut next = self.val;
         next ^= next >> 12;
@@ -41,9 +39,9 @@ impl Xorshift64 {
 /// Wrapper around a pointer.
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
-pub struct Pointer(pub *const Self);
+pub struct Pointer(pub usize);
 impl Default for Pointer {
-    fn default() -> Self { Self(0 as *const Self) }
+    fn default() -> Self { Self(0) }
 }
 
 /// Storage for a cyclic chain of pointers.
@@ -55,17 +53,17 @@ pub struct PointerMaze<const SIZE: usize> {
 }
 impl <const SIZE: usize> PointerMaze<SIZE> {
 
-    /// Allocate a new object (on the heap) where all the members are pointers 
-    /// initialized to zero.
-    ///
-    /// NOTE: You can't create a sized array and move it into a [Box] (you'll 
-    /// run out of stack space with the big arrays we need here!) This whole 
-    /// `.into_boxed_slice()` dance avoids those cases.
+    // NOTE: You can't create a sized array and move it into a [Box] (you'll 
+    // run out of stack space with the big arrays we need here!) This whole 
+    // `.into_boxed_slice()` dance avoids those cases.
     pub fn new() -> Self {
-        Self { 
+        let mut res = Self { 
             data: vec![Pointer::default(); SIZE]
                 .into_boxed_slice().to_owned()
-        }
+        };
+        res.initialize();
+        res.flush();
+        res
     }
 
     /// Get a pointer to the first entry.
@@ -91,14 +89,11 @@ impl <const SIZE: usize> PointerMaze<SIZE> {
     }
 
     /// Flush all associated cache lines.
-    #[inline(never)]
     pub fn flush(&mut self) {
         let head = self.data.as_ptr() as *const [u8; 64];
         for line_idx in 0..self.size_in_lines() {
             unsafe { 
-                let ptr = head.offset(
-                    line_idx.try_into().unwrap()
-                ) as *const u8;
+                let ptr = head.offset(line_idx as isize) as *const u8;
                 armv8::dc_civac(ptr);
             }
         }
@@ -107,18 +102,13 @@ impl <const SIZE: usize> PointerMaze<SIZE> {
     /// Initialize each element with a pointer to itself.
     pub fn initialize(&mut self) {
         for idx in 0..SIZE {
-            self.data[idx] = unsafe { 
-                Pointer(self.data.as_ptr()
-                    .offset(idx.try_into().unwrap()) 
-                    as *const Pointer
-                )
-            };
+            let ptr = &self.data[idx] as *const Pointer;
+            self.data[idx] = Pointer(ptr as usize);
         }
     }
 
     /// Shuffle elements, producing a randomized cyclic linked-list. 
     pub fn shuffle(&mut self, rng: &mut Xorshift64, stride: usize) {
-        self.initialize();
         for i in (1..SIZE / stride).rev() {
             let j = rng.next() % i;
             let a = j * stride;
