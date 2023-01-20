@@ -1,11 +1,13 @@
 
 .section .text
 
-// Entrypoint called from m1n1.
+// This is the entrypoint called from m1n1.
 
 .global _start
 _start:
-	adrp x8, _saved_context
+
+	// 
+	adr x8, _entrypoint_saved_context
 	mov x9, sp
 	str x18, [x8, #0x00]
 	str x19, [x8, #0x08]
@@ -28,7 +30,7 @@ _start:
 
 .global _exit
 _exit:
-	adrp x8, _saved_context
+	adr x8, _entrypoint_saved_context
 	ldr x18, [x8, #0x00]
 	ldr x19, [x8, #0x08]
 	ldr x20, [x8, #0x10]
@@ -46,19 +48,21 @@ _exit:
 	mov sp, x9
     ret
 
-_saved_context:
-_saved_x18: .quad 0
-_saved_x19: .quad 0
-_saved_x20: .quad 0
-_saved_x21: .quad 0
-_saved_x22: .quad 0
-_saved_x23: .quad 0
-_saved_x24: .quad 0
-_saved_x25: .quad 0
-_saved_x26: .quad 0
-_saved_x27: .quad 0
-_saved_x28: .quad 0
-_saved_x29: .quad 0
-_saved_lr:  .quad 0
-_saved_sp:  .quad 0
+_entrypoint_saved_context:
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+
+.pool
 

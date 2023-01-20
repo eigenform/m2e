@@ -15,7 +15,8 @@ extern "C" {
     pub fn _exit(ctx: *const ResultContext) -> !;
 }
 
-/// Jump to program exit and return to m1n1. 
+/// Wrapper around [_exit] - jump to program exit and return to m1n1 with
+/// a pointer to the current [ResultContext].
 pub fn exit(res: ResultCode) -> ! {
     unsafe { 
         CONTEXT.get().set_result(res);
@@ -68,8 +69,6 @@ pub static CONTEXT: StaticCell<ResultContext> = StaticCell::new(
 );
 
 /// Panic handler. 
-///
-/// NOTE: We could probably pull data out of [PanicInfo] if necessary.
 #[panic_handler]
 #[no_mangle]
 pub unsafe extern "C" fn panic_handler(_info: &PanicInfo<'_>) -> ! {

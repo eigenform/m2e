@@ -109,6 +109,7 @@ impl <const SIZE: usize> PointerMaze<SIZE> {
 
     /// Shuffle elements, producing a randomized cyclic linked-list. 
     pub fn shuffle(&mut self, rng: &mut Xorshift64, stride: usize) {
+        assert!(stride < SIZE);
         for i in (1..SIZE / stride).rev() {
             let j = rng.next() % i;
             let a = j * stride;
