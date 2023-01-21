@@ -75,6 +75,8 @@ pub mod mem;
 pub mod common;
 pub mod pmu;
 
+pub use core::assert;
+
 // The entrypoint and exit point for binaries using this runtime.
 core::arch::global_asm!(core::include_str!("start.s"));
 
