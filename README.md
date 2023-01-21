@@ -3,7 +3,7 @@
 Playground for experimenting with microbenchmarks on Apple Silicon 
 (specifically the T8112 - I'm using this on my 2022 13" MacBook Pro).
 
-## Setup
+## Setup and Usage
 
 These experiments rely on [AsahiLinux/m1n1](https://github.com/AsahiLinux/m1n1)
 proxy/hypervisor functionality for interacting with the hardware. Refer to the 
@@ -17,6 +17,13 @@ modules defined in `m1n1/proxyclient`:
 $ git clone --recursive https://github.com/eigenform/m2e
 ```
 
-You'll also want an `aarch64` toolchain on your host (ie. on my Arch Linux 
-machine, I grabbed the `aarch64-linux-gnu-gcc` package).
+`m2e-rs` is a Rust crate that defines a simple runtime environment for
+executables on top of m1n1 
+(see [m2e-rs/src/bin/template.rs](./m2e-rs/src/bin/template.rs)).
+You probably need to install Rust nightly and the `aarch64-unknown-none-gnu` 
+target in order to build this. 
+
+After booting into m1n1's proxy mode and connecting to the target device with
+USB, you can use [run-elf.py](./run-elf.py) to run an ELF binary. 
+
 
