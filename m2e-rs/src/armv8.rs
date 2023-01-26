@@ -9,6 +9,23 @@ pub fn dc_civac(ptr: *const u8) {
 }
 
 #[inline(always)]
+pub fn ic_ialluis() {
+    unsafe { 
+        asm!("ic ialluis; dsb sy");
+    }
+}
+
+#[inline(always)]
+pub fn tlbi_alle2is() {
+    unsafe { 
+        asm!("tlbi alle2is; dsb sy");
+    }
+}
+
+
+
+
+#[inline(always)]
 pub fn cntpct_el0() -> usize {
     let val: usize;
     unsafe { 

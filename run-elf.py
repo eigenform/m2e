@@ -15,6 +15,9 @@ from struct import pack, unpack
 import sys, pathlib
 sys.path.append(str(pathlib.Path("./m1n1/proxyclient")))
 
+def chunks(seq, size):
+    return [seq[pos:pos + size] for pos in range(0, len(seq), size)]
+
 TARGET_CPU = 4
 HEAP_SIZE  = 512 * (1024 * 1024)
 CODE_SIZE  = (1024 * 1024)
@@ -74,6 +77,7 @@ def exec_elf(elf_file: str) -> ResultContext:
 
         entrypt = img.load(code)
         print(f"[*] Entrypoint: {entrypt:016x}")
+        print("[*] Running payload ...")
 
         res = p.smp_call_sync(TARGET_CPU, entrypt, heap)
         print(f"[!] Returned with res={res:016x}")
@@ -89,21 +93,54 @@ def exec_elf(elf_file: str) -> ResultContext:
 # - You *need* to enable the MMU on secondary cores if you expect your machine 
 #   to not hard-reset every time you access RAM
 
-from m1n1.setup import *
-p.smp_start_secondaries()
-p.mmu_init_secondary(TARGET_CPU)
+if __name__ == "__main__":
 
-ctx = exec_elf("./m2e-rs/target/t8112/release/test")
-print(ctx)
+    if len(sys.argv) < 2:
+        print("usage: ./run-elf.py <path to ELF image>")
+        exit()
 
-# For now, assume that the result data is just a flat array of u64. 
-if (ctx.payload != 0) and (ctx.len != 0):
-    res_data = iface.readmem(ctx.payload, ctx.len)
-    num_elements = ctx.len // 8
-    res_arr  = unpack(f"<{num_elements}Q", res_data)
-    print(res_arr)
-    #res_avg = sum(res_arr) // len(res_arr)
-    #res_max = max(res_arr)
-    #res_min = min(res_arr)
-    #print(f"min={res_min:6} avg={res_avg:6} max={res_max:6}")
+    elf_path = str(pathlib.Path(sys.argv[1]).resolve())
+
+    from m1n1.setup import *
+    p.smp_start_secondaries()
+    p.mmu_init_secondary(TARGET_CPU)
+    print()
+
+    ctx = exec_elf(elf_path)
+    print(ctx)
+
+    ResultStruct = Struct(
+        "event" / Array(0x100, 
+            Struct("test" / Array(0x100, Struct("ctr" / Array(8, Int64ul)))))
+    )
+
+    if (ctx.payload != 0) and (ctx.len != 0):
+        res_data = iface.readmem(ctx.payload, ctx.len)
+        results = ResultStruct.parse(res_data)
+        for (eidx, event) in enumerate(results.event):
+
+            by_ctr = [ [], [], [], [], [], [], [], [] ]
+            for test in event.test:
+                for (ctr_idx, ctr_val) in enumerate(test.ctr):
+                    by_ctr[ctr_idx].append(ctr_val)
+
+            ctr_data = {}
+            for (ctr_idx, ctr_vals) in enumerate(by_ctr):
+                if sum(ctr_vals) == 0: 
+                    continue
+                else:
+                    ctr_data[ctr_idx] = {
+                        'min': min(ctr_vals),
+                        'avg': sum(ctr_vals) // len(ctr_vals),
+                        'max': max(ctr_vals),
+                    }
+
+            if len(ctr_data) != 0:
+                mins = [ data['min'] for (key, data) in ctr_data.items() ][0]
+                avgs = [ data['avg'] for (key, data) in ctr_data.items() ][0]
+                maxs = [ data['max'] for (key, data) in ctr_data.items() ][0]
+                print(f"{eidx:02x}: ", 
+                      f"min={mins:5}, avg={avgs:5} max={maxs:5}")
+
+
 

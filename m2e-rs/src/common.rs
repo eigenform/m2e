@@ -1,4 +1,5 @@
 
+use crate::pmu;
 use core::panic::PanicInfo;
 use core::cell::UnsafeCell;
 
@@ -17,7 +18,11 @@ extern "C" {
 
 /// Wrapper around [_exit] - jump to program exit and return to m1n1 with
 /// a pointer to the current [ResultContext].
+///
+/// This should always clear the PMU state before we return to m1n1.
+///
 pub fn exit(res: ResultCode) -> ! {
+    pmu::clear_pmu_state();
     unsafe { 
         CONTEXT.get().set_result(res);
         _exit(CONTEXT.get())
