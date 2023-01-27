@@ -74,6 +74,7 @@ pub mod armv8;
 pub mod mem;
 pub mod common;
 pub mod pmu;
+pub mod codegen;
 
 pub use core::assert;
 

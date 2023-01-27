@@ -6,7 +6,7 @@
 // test_wrapper(pmcr0_bits: usize, scratch_addr: usize)
 .global test_wrapper
 test_wrapper:
-	adr x8, _trampoline_saved_state
+	adr x8, _test_wrapper_saved_state
 	mov x9, sp
 	str x18, [x8, #0x00]
 	str x19, [x8, #0x08]
@@ -208,7 +208,7 @@ _end_measurement:
     isb
 
 	// Restore our saved state and return to the caller
-	adr x8, _trampoline_saved_state
+	adr x8, _test_wrapper_saved_state
 	ldr x18, [x8, #0x00]
 	ldr x19, [x8, #0x08]
 	ldr x20, [x8, #0x10]
@@ -227,7 +227,7 @@ _end_measurement:
 	mov sp, x9
     ret
 
-_trampoline_saved_state:
+_test_wrapper_saved_state:
 	.quad 0
 	.quad 0
 	.quad 0
