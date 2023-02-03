@@ -1,3 +1,6 @@
+//! For emitting ARMv8 instructions.
+//!
+//! NOTE: If this becomes substantial, just make it a separate library
 
 use crate::mem::*;
 use core::alloc::{ GlobalAlloc, Layout };
@@ -52,17 +55,25 @@ pub enum Armv8Instr {
     Nop,
     DsbSy,
     Ret { rn: Gpr },
+    MovReg { rd: Gpr, rm: Gpr },
+    MovImm { rd: Gpr, imm: Gpr },
 }
 impl Armv8Instr {
     fn emit_ret(rn: Gpr) -> u32 {
         let val = 0b1101011_0_0_10_11111_0000_0_0_00000_00000;
         val | (rn.idx() << 5)
     }
+    fn emit_mov_reg(rd: Gpr, rm: Gpr) -> u32 {
+        let val = 0b1_01_01010_00_0_00000_000000_11111_00000;
+        val | (rm.idx() << 16) | rd.idx()
+    }
     pub fn emit(&self) -> u32 {
         match self { 
-            Self::Nop        => 0xd503201f,
-            Self::DsbSy      => 0xd5033f9f,
-            Self::Ret { rn } => Self::emit_ret(*rn),
+            Self::Nop            => 0xd503201f,
+            Self::DsbSy          => 0xd5033f9f,
+            Self::Ret { rn }     => Self::emit_ret(*rn),
+            Self::MovReg { rd, rm } => Self::emit_mov_reg(*rd, *rm),
+            _ => unimplemented!(),
         }
     }
 }
