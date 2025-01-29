@@ -1,8 +1,19 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+
+""" lap.py
+See Listing #1 from [https://predictors.fail/files/SLAP.pdf].
+
+This is plagarized from marcan, see: 
+[https://gist.github.com/marcan/b228f0ec239df2dc4971f574e19ad002]
+[https://social.treehouse.systems/@marcan/113911770201326894]
+"""
+
 
 import random
 import itertools
 import array
+import statistics
 from hexdump import *
 from pym2e.asm import *
 from pym2e.experiment import *
@@ -13,15 +24,10 @@ from pym2e.util import *
 from m1n1.asm import ARMAsm
 
 def lap_test(num_words: int, word_stride: int, randomized=False): 
-    """
-    Listing 1. from [https://predictors.fail/files/SLAP.pdf]
+    # Number of loads to-be-performed
+    num_accesses = num_words // word_stride
 
-    Mostly plagarized from marcan, see: 
-    [https://social.treehouse.systems/@marcan/113911770201326894]
-    """
-
-    # Maximum number of loop iterations when visiting the elements
-    max_iters = num_words // word_stride
+    print(f"[*] num_words={num_words}, word_stride={word_stride}, num_accesses={num_accesses}")
 
     # Array of 32-bit words
     BUF = [0] * num_words
@@ -30,13 +36,17 @@ def lap_test(num_words: int, word_stride: int, randomized=False):
         shuffled = list(range(1, num_words))
         random.shuffle(shuffled)
         for word_idx in range(0, num_words-1):
-            BUF[word_idx] = shuffled[word_idx]
+            BUF[word_idx] = shuffled[word_idx] * 4
+            #BUF[word_idx] = shuffled[word_idx]
     else:
         for word_idx in range(0, num_words, word_stride):
             next_word_idx = (word_idx + word_stride)
             BUF[word_idx] = next_word_idx * 4
+            #BUF[word_idx] = next_word_idx
 
+    #print(BUF)
     BUF_DATA = array.array('I', BUF).tobytes()
+    #print("[*] Buffer size: {}B".format(len(BUF_DATA)))
 
     buf = tgt.u.malloc(len(BUF_DATA))
     tgt.iface.writemem(buf, BUF_DATA)
@@ -61,7 +71,8 @@ def lap_test(num_words: int, word_stride: int, randomized=False):
     .endm
 
     start:
-        mov x4, #{max_iters}
+        mov x4, #{num_accesses}
+        mov x3, #0
 
     // Prepare the cache
     1:
@@ -69,7 +80,7 @@ def lap_test(num_words: int, word_stride: int, randomized=False):
         sub x4, x4, #1
         cbnz x4, 1b
 
-        mov x4, #{max_iters}
+        mov x4, #{num_accesses}
         mov x3, #0
         read_pmc0 x8
 
@@ -90,16 +101,29 @@ def lap_test(num_words: int, word_stride: int, randomized=False):
 
     x0 = 0
     x1 = buf
-    res = tgt.smp_call_sync(snip.start, x0, x1)
-    print(f"num_words={num_words}, word_stride={word_stride}, cycles={res}")
+    results = []
+    for _ in range(32):
+        res = tgt.smp_call_sync(snip.start, x0, x1)
+        results.append(res)
+    median = int(statistics.median(results))
+    print(f"   median: {median} cyc")
 
 
 # =============================================================================
 
 tgt = TargetMachine()
-for num_words in [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]:
+
+#hid11 = tgt.mrs((3, 0, 15, 11, 0))
+#print(f"HID11={hid11:016x}")
+#tgt.msr((3, 0, 15, 11, 0), hid11 | (1 << 30))
+
+print("Sequential offsets:")
+for num_words in [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]:
     lap_test(num_words, 4, randomized=False)
+
 print()
-for num_words in [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]:
+print("Randomized offsets:")
+for num_words in [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]:
     lap_test(num_words, 4, randomized=True)
+
 
