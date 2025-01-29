@@ -19,7 +19,13 @@ def grouper(iterable, n, *, incomplete='fill', fillvalue=None):
 def print_samples_history(samples, col=64):
     for vals in grouper(samples, col, incomplete='fill', fillvalue=None):
         s = ''.join('x' if x == None else "{}".format(x) for x in vals)
-        print(s)
+        print(s, flush=True)
+
+def print_samples_history_wide(samples, col=64, fmtstr="{:3}"):
+    for vals in grouper(samples, col, incomplete='fill', fillvalue=None):
+        s = ''.join('xxx ' if x == None else fmtstr.format(x) for x in vals)
+        print(s, flush=True)
+
 
 def samples_to_dist(samples):
     """ Count the different observed values in a set of samples """
@@ -36,8 +42,12 @@ class PatternCounter(object):
     def __init__(self, pattern):
         self.pattern = pattern
         self.ctr = 0
+
     def output(self):
         return self.pattern[self.ctr]
+    def output_bool(self):
+        return True if self.pattern[self.ctr] == 1 else False
+
     def next(self):
         self.ctr += 1
         if self.ctr == len(self.pattern):
@@ -53,6 +63,9 @@ class SingleCounter(object):
 
     def output(self):
         return self.value
+    def output_bool(self):
+        return True if self.value == 1 else False
+
 
     def next(self):
         if self.ctr == (self.period - 1):
@@ -71,6 +84,8 @@ class FlipCounter(object):
 
     def output(self):
         return self.value
+    def output_bool(self):
+        return True if self.value == 1 else False
 
     def next(self):
         if self.ctr == self.period:

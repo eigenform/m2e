@@ -60,4 +60,14 @@ class TargetMachine(object):
         res = self.p.smp_call_sync(self.TARGET_CPU, addr, *args)
         return res
 
+    def msr(self, x, v):
+        def cpu_call(x, *args):
+            return self.smp_call_sync(x, *args)
+        self.u.msr(x, v, call=lambda x, *args: cpu_call(x, *args))
+
+    def mrs(self, x):
+        def cpu_call(x, *args):
+            return self.smp_call_sync(x, *args)
+        return self.u.mrs(x, call=lambda x, *args: cpu_call(x, *args))
+
 
