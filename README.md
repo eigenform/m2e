@@ -20,31 +20,26 @@ a submodule, and we rely on the Python modules defined in `m1n1/proxyclient`.
 $ git clone --recursive https://github.com/eigenform/m2e
 ```
 
-My process for using these tools looks like this:
+**NOTE:** My machine is using the version of `m1n1` tracked in this repository.
+This is probably *unsafe* for machines which may have a different version of
+`m1n1` installed.
+
+In general, my process for using these tools looks like this:
 
 1. My MacBook is connected to my host machine with a USB3 cable
-2. Start `./m1n1/proxyclient/tools/picocom-sec.sh` 
+2. Start `./m1n1/proxyclient/tools/picocom-sec.sh` on the host
 3. Boot with m1n1's proxy mode enabled
-4. Run experiments
+4. Run some experiments
 5. When you're done, run `./m1n1/proxyclient/tools/reboot.py`, yank the 
-   USB3 cable, and let m1n1 boot into Asahi Linux
+   USB3 cable, let m1n1 boot into Asahi Linux, and then power-off the 
+   machine
 
+The scripts in this repository depend on [pym2e/](./pym2e/), which has some 
+utilities for initializing the machine and assembling/running/loading small 
+pieces of code with the proxy client.
 
-## Bare-metal Rust programs
+## Experiments
 
-`m2e-rs` is a Rust crate that defines a simple runtime environment for
-executables on top of m1n1 
-(see [m2e-rs/src/bin/template.rs](./m2e-rs/src/bin/template.rs)).
-You probably need to install Rust nightly for this. Since my host machine is
-x86, I also needed to install the `aarch64-unknown-none-gnu` target in order 
-to build this. I'm using [run-elf.py](./run-elf.py) to load and run the 
-resulting binaries.
-
-## Microbenchmarking in m1n1
-
-[pym2e/](./pym2e/) has some infrastructure for assembling/running/loading
-small pieces of code. See the following:
-
-- [pht.py](./pht.py) - local branch predictor experiments
+...
 
 
